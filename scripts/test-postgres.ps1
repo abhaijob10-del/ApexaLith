@@ -22,9 +22,13 @@ try {
   if ($LASTEXITCODE) { throw "Migration replay failed" }
   $result = & "$Bin\psql.exe" -h 127.0.0.1 -p $port -U qa -d postgres -Atc "SELECT count(*) FROM apexalith.migrations"
   if ($LASTEXITCODE -or [int]$result -lt 1) { throw "Migration ledger check failed" }
+  $env:APEXALITH_ISOLATED_QA = "1"
+  $env:MEDIA_DIR = Join-Path $root "media"
   if (Test-Path tests/integration.mjs) {
     node --test tests/integration.mjs
     if ($LASTEXITCODE) { throw "Integration tests failed" }
+    node --test tests/browser.mjs
+    if ($LASTEXITCODE) { throw "Browser tests failed" }
   }
 } finally {
   & "$Bin\pg_ctl.exe" -D $cluster -m fast -w stop

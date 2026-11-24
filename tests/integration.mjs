@@ -8,6 +8,7 @@ import {database} from '../db/connection.mjs';
 import {hashPassword} from '../backend/security.mjs';
 
 test('isolated PostgreSQL application workflows', async t=>{
+  assert.equal(process.env.APEXALITH_ISOLATED_QA,'1','Use scripts/test-postgres.ps1');
   process.env.NODE_ENV='test'; process.env.OTP_PROVIDER='development';
   process.env.DEV_OTP=String(randomInt(100000,1000000));process.env.OTP_SECRET=randomBytes(32).toString('hex');
   const app=express();installPlatform(app);app.use(apiErrors);

@@ -32,3 +32,9 @@ PostgreSQL HTTP tests passed for normalized phone login, cooldown, invalid/expir
 ## Catalogue and media checkpoint
 
 Authentication committed and pushed as 52ee90c. Added listing, enquiry, saved-property, settings and dashboard APIs; validated image decoding and WebP variants; configurable local/S3 storage; and transactional gallery references and audit events. The PostgreSQL HTTP suite passed for apartment/design creation, draft visibility, publication, search, save, four request types, internal notes, media retrieval, referenced deletion rejection, archival and unused-image deletion. S3 was not contacted.
+
+## UI checkpoint
+
+Catalogue phase committed and pushed as f4331a6. The active React entry now uses the persisted catalogue and server identity. The dashboard supports apartment/design publication, preview, gallery ordering, upload and archive, leads, customers and content. Existing specialist BIM/interior sources are preserved outside the active public entry. The original homepage photograph, brand typefaces and company identity were retained. Public pages include detail URLs, search, saved apartments, profile, requests, contact and draft legal text.
+
+Headless Edge verified administrator CLI creation, sign-in, listing preview/publication, search, restart persistence, session persistence and reset-driven revocation. A real detail page fit 375, 768 and 1366 pixel viewports. Type checking and the production build passed. The main JavaScript bundle is about 244 kB before gzip, with the admin UI split out.
