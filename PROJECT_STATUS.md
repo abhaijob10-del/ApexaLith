@@ -46,3 +46,7 @@ UI phase committed and pushed as 31b50fe. Added optional per-admin authenticator
 Final local results: npm run lint and npm run build passed. On PostgreSQL 18 all three migrations applied and replayed. The HTTP workflow suite and the headless Edge production suite both passed. Tests include expired sessions, OTP attempt exhaustion, MFA replay, draft visibility, media reference protection, local uploaded image persistence across restart, responsive detail pages, CLI reset, sitemap, Open Graph metadata and private noindex. The test harness never used the owner's database. The final main bundle was about 76.7 kB gzip.
 
 Remaining launch gates: configure the owner's local DATABASE_URL, provision the first real administrator, independently approve and test domestic SMS delivery, validate HTTPS/proxy and actual persistent storage, restore a backup, approve company/legal/RERA content and test accessibility and field performance on real devices. No public deployment, purchase, production migration or customer communication occurred. The operator confirmed that pushing production has no connected deployment. Next step is the owner configuration in SETUP_GUIDE.md followed by the staging checks in DEPLOYMENT_GUIDE.md.
+
+## Release tests
+
+Hardening commit 6a92144 is on origin/production. Extended QA verified replacement and reordering of gallery images, the maintenance command, refusal to seed production, and idempotent creation of two development-only drafts. Test storage is explicitly local and fresh harness runs clean up their own stopped temporary cluster.

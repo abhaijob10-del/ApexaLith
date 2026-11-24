@@ -114,6 +114,14 @@ export async function verifyCatalog(request, base, admin, customer) {
   );
   assert.equal(design.status, 200);
   const designId = (await design.json()).id;
+  const alternate=await upload(image);
+  assert.equal(alternate.status,201);
+  const second=(await alternate.json()).id;
+  for(const gallery of [[imageId,second],[second,imageId],[second]]) {
+    assert.equal((await request('v1/manage/listings/'+designId,'PUT',{...listing,kind:'design',slug:'qa-design',gallery},admin)).status,200);
+    const detail=await (await request('v1/listings/qa-design')).json();
+    assert.deepEqual(detail.gallery,gallery);
+  }
   for (const [key, record] of [
     [id, listing],
     [designId, { ...listing, kind: "design", slug: "qa-design" }],
