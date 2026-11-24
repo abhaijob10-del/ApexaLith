@@ -1,3 +1,4 @@
+import {verifyCatalog} from './catalog.mjs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {randomBytes,randomInt} from 'node:crypto';
@@ -35,6 +36,7 @@ test('isolated PostgreSQL application workflows', async t=>{
   const adminLogin=await request('v1/admin/login','POST',{email,password});assert.equal(adminLogin.status,204);
   const admin=adminLogin.headers.get('set-cookie').split(';')[0];
   assert.equal((await (await request('v1/session','GET',null,admin)).json()).user.role,'admin');
+  await verifyCatalog(request,'http://127.0.0.1:'+server.address().port,admin,customer);
   assert.equal((await request('v1/logout','POST',{},admin)).status,204);
   assert.equal((await (await request('v1/session','GET',null,admin)).json()).user,null);
   process.env.NODE_ENV='production';

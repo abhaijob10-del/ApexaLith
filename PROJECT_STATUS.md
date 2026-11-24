@@ -28,3 +28,7 @@ Build repair committed as 2f890d3. Added pooled node-postgres connections, an is
 PostgreSQL phase committed as 3e5e6d0 and pushed to origin/production. Replaced the hardcoded administrator and fallback login API. Added scrypt administrator provisioning/reset, keyed OTP digests, development and Twilio delivery adapters, rate limits, expiring cookie sessions, profile edits and session revocation. Legacy business APIs require a database-backed administrator session. The original credential remains in Git history and must be retired wherever it was reused.
 
 PostgreSQL HTTP tests passed for normalized phone login, cooldown, invalid/expired/replayed codes, profile edit, administrator login, forbidden customer access, logout and the production development-provider guard. Real SMS remains untested. Next are the dashboard, database-backed public catalogue, media and replacement of the legacy demo role switcher.
+
+## Catalogue and media checkpoint
+
+Authentication committed and pushed as 52ee90c. Added listing, enquiry, saved-property, settings and dashboard APIs; validated image decoding and WebP variants; configurable local/S3 storage; and transactional gallery references and audit events. The PostgreSQL HTTP suite passed for apartment/design creation, draft visibility, publication, search, save, four request types, internal notes, media retrieval, referenced deletion rejection, archival and unused-image deletion. S3 was not contacted.

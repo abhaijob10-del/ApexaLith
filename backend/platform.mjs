@@ -1,3 +1,5 @@
+import {catalogRoutes} from './catalog.mjs';
+import {mediaRoutes} from './media.mjs';
 import express from 'express';
 import {authRoutes} from './auth.mjs';
 import {requireRole} from './security.mjs';
@@ -16,11 +18,15 @@ export function installPlatform(app) {
   const api=express.Router();
   api.use(express.json({limit:'64kb'}));
   authRoutes(api);
+  catalogRoutes(api);
+  mediaRoutes(api);
   app.use('/api/v1',api);
   app.use('/api/v1',(req,res)=>res.status(404).json({error:'Unknown endpoint.'}));
   app.use('/api',(req,res,next)=>req.path==='/health' && req.method==='GET'?next():requireRole('admin')(req,res,next));
 }
 export function apiErrors(err,req,res,next) {
+  if(err.code==='23503' || err.code==='23505') return res.status(409).json({error:'This item is referenced or its unique value is already used.'});
+  if(['22008','22007','23514','22P02'].includes(err.code)) return res.status(400).json({error:'Check the supplied values.'});
   const status=Number(err.status)||500;
   console.error(JSON.stringify({event:status===401?'authentication_denied':status>=500?'application_error':'request_denied',status}));
   res.status(status).json({error:status>=500?'Service temporarily unavailable.':err.type==='entity.parse.failed'?'Invalid JSON.':err.message});
