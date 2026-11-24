@@ -22,3 +22,9 @@ Production deployment is blocked. The database, auth, CMS, media and customer wo
 ## PostgreSQL checkpoint
 
 Build repair committed as 2f890d3. Added pooled node-postgres connections, an isolated apexalith schema, additive transactions and checksum-verified migrations. The schema covers customers, administrators, sessions, OTP challenges, throttling, apartments/designs, ordered media references, saved properties, enquiries, content settings and audit history. In a separate disposable PostgreSQL 18 instance the initial migration, replay and ledger check passed. Existing databases were untouched. Application route integration follows.
+
+## Authentication and authorization checkpoint
+
+PostgreSQL phase committed as 3e5e6d0 and pushed to origin/production. Replaced the hardcoded administrator and fallback login API. Added scrypt administrator provisioning/reset, keyed OTP digests, development and Twilio delivery adapters, rate limits, expiring cookie sessions, profile edits and session revocation. Legacy business APIs require a database-backed administrator session. The original credential remains in Git history and must be retired wherever it was reused.
+
+PostgreSQL HTTP tests passed for normalized phone login, cooldown, invalid/expired/replayed codes, profile edit, administrator login, forbidden customer access, logout and the production development-provider guard. Real SMS remains untested. Next are the dashboard, database-backed public catalogue, media and replacement of the legacy demo role switcher.

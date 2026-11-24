@@ -1,3 +1,4 @@
+import {installPlatform, apiErrors} from './backend/platform.mjs';
 import express from 'express';
 import path from 'path';
 import { GoogleGenAI } from '@google/genai';
@@ -20,6 +21,7 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
+installPlatform(app);
 app.use(express.json());
 
 // Initialize Gemini API if key is available
@@ -35,17 +37,6 @@ if (process.env.GEMINI_API_KEY) {
 // -----------------------------------------------------------------------------
 // IN-MEMORY / PERSISTENT DATA REPOSITORIES (Idempotent seed data)
 // -----------------------------------------------------------------------------
-
-// Initial Admin User (Provisioned securely on server)
-const ADMIN_USER = {
-  id: 'usr_admin_001',
-  email: 'admin@apexalith.com',
-  password: 'ApexaLith#Admin2026!Secure', // Temporary initial setup password
-  role: 'admin',
-  name: 'Executive Administrator',
-  isTemporaryPassword: true,
-  createdAt: '2026-01-01T00:00:00Z'
-};
 
 // Seed Team Members
 const teamMembers: TeamMember[] = [
@@ -548,91 +539,6 @@ app.get('/api/health', (req, res) => {
     brand: 'ApexaLith',
     version: '3.0.0-Luxury-ConTech-Platform',
     timestamp: new Date().toISOString()
-  });
-});
-
-// 2. Auth Endpoint & Initial Admin Bootstrap
-app.post('/api/auth/login', (req, res) => {
-  const { email, password, role } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required.' });
-  }
-
-  // Admin Check
-  if (email.toLowerCase() === ADMIN_USER.email.toLowerCase()) {
-    if (password === ADMIN_USER.password) {
-      recordAudit(ADMIN_USER.id, 'admin', 'admin_login', 'auth', req, 'success');
-      return res.json({
-        success: true,
-        user: {
-          id: ADMIN_USER.id,
-          email: ADMIN_USER.email,
-          name: ADMIN_USER.name,
-          role: 'admin',
-          isTemporaryPassword: ADMIN_USER.isTemporaryPassword
-        }
-      });
-    } else {
-      recordAudit(email, 'admin', 'admin_login_failed', 'auth', req, 'denied');
-      return res.status(401).json({ error: 'Invalid administrator credentials.' });
-    }
-  }
-
-  // Check Team Members
-  const teamMatch = teamMembers.find(t => t.email.toLowerCase() === email.toLowerCase());
-  if (teamMatch) {
-    recordAudit(teamMatch.id, teamMatch.role, 'team_login', 'auth', req, 'success');
-    return res.json({
-      success: true,
-      user: {
-        id: teamMatch.id,
-        email: teamMatch.email,
-        name: teamMatch.name,
-        role: teamMatch.role,
-        assignedProjectIds: teamMatch.assignedProjectIds
-      }
-    });
-  }
-
-  // Check Customer Project Match
-  const clientProject = projects.find(p => p.customerEmail?.toLowerCase() === email.toLowerCase());
-  if (clientProject) {
-    recordAudit(clientProject.customerId || 'cust_user', 'customer', 'customer_login', 'auth', req, 'success');
-    return res.json({
-      success: true,
-      user: {
-        id: clientProject.customerId || 'cust_user',
-        email: clientProject.customerEmail,
-        name: clientProject.customerName || 'Client',
-        role: 'customer',
-        projectId: clientProject.id
-      }
-    });
-  }
-
-  // Generic Customer or Quick Demo Fallback for specified role
-  if (role && (role === 'customer' || role === 'project_manager' || role === 'investor' || role === 'broker')) {
-    return res.json({
-      success: true,
-      user: {
-        id: `usr_${role}_${Date.now()}`,
-        email,
-        name: email.split('@')[0],
-        role
-      }
-    });
-  }
-
-  return res.status(401).json({ error: 'Account not recognized. Please verify credentials or contact concierge.' });
-});
-
-// Admin Account Bootstrap Status
-app.get('/api/auth/bootstrap-status', (req, res) => {
-  res.json({
-    adminConfigured: true,
-    adminEmail: ADMIN_USER.email,
-    isTemporaryPassword: ADMIN_USER.isTemporaryPassword
   });
 });
 
@@ -1344,6 +1250,8 @@ Never give raw dollar price quotes; emphasize bespoke consultative excellence.`;
   }
 });
 
+app.use(apiErrors);
+
 // Serve frontend in dev or prod
 async function startServer() {
   if (process.env.NODE_ENV !== 'production' && !process.argv.includes('--serve-built')) {
@@ -1363,7 +1271,6 @@ async function startServer() {
 
   app.listen(PORT, process.env.HOST || '127.0.0.1', () => {
     console.log(`[ApexaLith Server Running] http://localhost:${PORT}`);
-    console.log(`[ApexaLith Admin Initialized] email: ${ADMIN_USER.email}`);
   });
 }
 
