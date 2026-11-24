@@ -54,3 +54,7 @@ Remaining launch gates: configure the owner's local DATABASE_URL, provision the 
 ## Release tests
 
 Hardening commit 6a92144 is on origin/production. Extended QA verified replacement and reordering of gallery images, the maintenance command, refusal to seed production, and idempotent creation of two development-only drafts. Test storage is explicitly local and fresh harness runs clean up their own stopped temporary cluster.
+
+## UI refinement
+
+Updated the React homepage, mobile navigation, listing cards and search states, photo gallery, enquiry feedback and administrator workspace. Retained the existing homepage photograph and public routes. Type checking and the production build passed. Headless Edge verified mobile menu navigation and Escape focus return, clearing search filters, switching listing photos, and the existing administrator publishing and responsive listing workflows.

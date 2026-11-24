@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import sharp from "sharp";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
@@ -69,6 +69,29 @@ test("production UI, persistence and responsive layout", async (t) => {
   const page = await browser.newPage();
   page.setDefaultTimeout(8000);
   await page.route("https://**/*", (route) => route.abort());
+  await page.setViewportSize({ width: 375, height: 850 });
+  await page.goto(origin);
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  assert.equal(await navigation.isVisible(), false);
+  await menu.click();
+  await navigation
+    .getByRole("link", { name: "Apartments", exact: true })
+    .focus();
+  await page.keyboard.press("Escape");
+  assert.equal(await menu.getAttribute("aria-expanded"), "false");
+  assert.equal(
+    await menu.evaluate((element) => element === document.activeElement),
+    true,
+  );
+  await menu.click();
+  await navigation
+    .getByRole("link", { name: "Apartments", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "Apartments", exact: true })
+    .waitFor();
+  await page.setViewportSize({ width: 1366, height: 850 });
   await page.goto(origin + "/admin/login");
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
@@ -83,9 +106,23 @@ test("production UI, persistence and responsive layout", async (t) => {
   await page.getByLabel("Title", { exact: true }).fill("Browser QA home");
   await page.getByLabel("URL slug").fill("browser-qa-home");
   await page.getByLabel("Location", { exact: true }).fill("Bengaluru");
-  const pixel=await sharp({create:{width:50,height:40,channels:3,background:'#aabbbb'}}).png().toBuffer();
-  await page.getByLabel('Upload images').setInputFiles({name:'qa.png',mimeType:'image/png',buffer:pixel});
-  await page.getByText('Upload complete.',{exact:true}).waitFor();
+  const pixel = await sharp({
+    create: { width: 50, height: 40, channels: 3, background: "#aabbbb" },
+  })
+    .png()
+    .toBuffer();
+  await page
+    .getByLabel("Upload images")
+    .setInputFiles({ name: "qa.png", mimeType: "image/png", buffer: pixel });
+  await page.getByText("Upload complete.", { exact: true }).waitFor();
+  await page
+    .getByLabel("Upload images")
+    .setInputFiles({
+      name: "qa-second.png",
+      mimeType: "image/png",
+      buffer: pixel,
+    });
+  await page.getByText("Upload complete.", { exact: true }).waitFor();
   await page.getByLabel("Publication").selectOption("published");
   await page.getByRole("button", { name: "Preview listing" }).click();
   await page.getByRole("heading", { name: "Browser QA home" }).waitFor();
@@ -111,7 +148,9 @@ test("production UI, persistence and responsive layout", async (t) => {
     await page.setViewportSize({ width, height: 850 });
     await page.goto(origin + "/apartments/browser-qa-home");
     await page.getByRole("heading", { name: "Browser QA home" }).waitFor();
-    await page.waitForFunction(()=>document.querySelector(".cover img")?.naturalWidth>0);
+    await page.waitForFunction(
+      () => document.querySelector(".cover img")?.naturalWidth > 0,
+    );
     assert.ok(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -123,6 +162,21 @@ test("production UI, persistence and responsive layout", async (t) => {
   await page.getByLabel("Search name or location").fill("Browser QA");
   await page.getByRole("button", { name: "Apply filters" }).click();
   await page.getByRole("heading", { name: "Browser QA home" }).waitFor();
+  await page
+    .getByLabel("Search name or location")
+    .fill("No listing matches this search");
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  await page.getByRole("heading", { name: "No matching listings" }).waitFor();
+  await page.getByRole("button", { name: "Show all listings" }).click();
+  await page.getByRole("heading", { name: "Browser QA home" }).click();
+  await page.getByRole("button", { name: "Show photo 2" }).click();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Show photo 2" })
+      .getAttribute("aria-pressed"),
+    "true",
+  );
+  await page.getByRole("img", { name: "Browser QA home – photo 2" }).waitFor();
   await page.goto(origin + "/admin/dashboard");
   await page.getByRole("button", { name: "Overview", exact: true }).waitFor();
   assert.equal(cli("reset", randomBytes(24).toString("hex")), 0);

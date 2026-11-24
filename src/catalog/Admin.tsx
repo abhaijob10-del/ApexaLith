@@ -1,6 +1,16 @@
 ﻿import React, { useState } from "react";
 import { api } from "../services/api";
 import {
+  Building2,
+  Image,
+  LayoutDashboard,
+  Mail,
+  PencilRuler,
+  Settings2,
+  Shield,
+  Users,
+} from "lucide-react";
+import {
   Feedback,
   FormAction,
   Input,
@@ -557,6 +567,17 @@ function Content() {
     </>
   );
 }
+const adminSections = [
+  { name: "Overview", icon: LayoutDashboard },
+  { name: "Apartments", icon: Building2 },
+  { name: "Designs", icon: PencilRuler },
+  { name: "Media", icon: Image },
+  { name: "Enquiries", icon: Mail },
+  { name: "Customers", icon: Users },
+  { name: "Content", icon: Settings2 },
+  { name: "Security", icon: Shield },
+];
+
 export default function Admin({ user }: { user: any }) {
   const [tab, set] = useState("Overview");
   if (user?.role !== "admin")
@@ -564,66 +585,69 @@ export default function Admin({ user }: { user: any }) {
       <LoginForm admin onSuccess={() => location.assign("/admin/dashboard")} />
     );
   return (
-    <>
+    <div className="admin-page">
       <h1>Administration</h1>
-      <nav className="tabs" aria-label="Administration">
-        {[
-          "Overview",
-          "Apartments",
-          "Designs",
-          "Media",
-          "Enquiries",
-          "Customers",
-          "Content",
-          "Security",
-        ].map((x) => (
-          <button aria-pressed={x === tab} key={x} onClick={() => set(x)}>
-            {x}
-          </button>
-        ))}
-      </nav>
-      {tab === "Overview" ? (
-        <Overview />
-      ) : tab === "Apartments" || tab === "Designs" ? (
-        <Listings key={tab} kind={tab === "Designs" ? "design" : "apartment"} />
-      ) : tab === "Media" ? (
-        <Media />
-      ) : tab === "Customers" ? (
-        <Customers />
-      ) : tab === "Enquiries" ? (
-        <Leads />
-      ) : tab === "Content" ? (
-        <Content />
-      ) : (
-        <>
-          <h2>Account security</h2>
-          <FormAction
-            submit={(b) => api("/admin/password", "POST", b)}
-            label="Change password"
-            onDone={() => location.assign("/admin/login")}
-          >
-            <Input
-              name="current"
-              label="Current password"
-              type="password"
-              required
+      <div className="admin-layout">
+        <nav className="tabs" aria-label="Administration">
+          {adminSections.map(({ name, icon: Icon }) => (
+            <button
+              type="button"
+              aria-pressed={name === tab}
+              key={name}
+              onClick={() => set(name)}
+            >
+              <Icon size={18} aria-hidden="true" /> {name}
+            </button>
+          ))}
+        </nav>
+        <div className="admin-panel">
+          {tab === "Overview" ? (
+            <Overview />
+          ) : tab === "Apartments" || tab === "Designs" ? (
+            <Listings
+              key={tab}
+              kind={tab === "Designs" ? "design" : "apartment"}
             />
-            <Input
-              name="password"
-              label="New password (14–128 characters)"
-              type="password"
-              required
-            />
-          </FormAction>
-          <FormAction
-            submit={() => api("/logout", "POST", {})}
-            label="Sign out"
-            onDone={() => location.assign("/admin/login")}
-          >
-            {null}
-          </FormAction>
-        </>
-      )}
-    </>
+          ) : tab === "Media" ? (
+            <Media />
+          ) : tab === "Customers" ? (
+            <Customers />
+          ) : tab === "Enquiries" ? (
+            <Leads />
+          ) : tab === "Content" ? (
+            <Content />
+          ) : (
+            <>
+              <h2>Account security</h2>
+              <FormAction
+                submit={(b) => api("/admin/password", "POST", b)}
+                label="Change password"
+                onDone={() => location.assign("/admin/login")}
+              >
+                <Input
+                  name="current"
+                  label="Current password"
+                  type="password"
+                  required
+                />
+                <Input
+                  name="password"
+                  label="New password (14–128 characters)"
+                  type="password"
+                  required
+                />
+              </FormAction>
+              <FormAction
+                submit={() => api("/logout", "POST", {})}
+                label="Sign out"
+                onDone={() => location.assign("/admin/login")}
+              >
+                {null}
+              </FormAction>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

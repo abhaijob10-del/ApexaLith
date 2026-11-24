@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../services/api";
+import { ArrowUpRight, Building2, PencilRuler } from "lucide-react";
 export type Listing = {
   id: string;
   kind: string;
@@ -47,7 +48,9 @@ export function Feedback({ error }: { error?: string }) {
       {error}
     </p>
   ) : (
-    <p role="status" className="loading-placeholder">Loading…</p>
+    <div className="loading-placeholder" role="status">
+      <span className="loading-indicator" aria-hidden="true" /> Loading…
+    </div>
   );
 }
 export function Photo({
@@ -91,14 +94,36 @@ export function Card({ item }: { item: Listing }) {
           item.slug
         }
       >
-        {item.gallery[0] && <Photo id={item.gallery[0]} alt={item.title} />}
-        <div>
-          <small>{item.location || item.category}</small>
+        <div className="property-visual">
+          {item.gallery[0] ? (
+            <Photo id={item.gallery[0]} />
+          ) : item.kind === "design" ? (
+            <PencilRuler aria-hidden="true" />
+          ) : (
+            <Building2 aria-hidden="true" />
+          )}
+          {item.availability && (
+            <span className="availability" data-status={item.availability}>
+              {item.availability}
+            </span>
+          )}
+        </div>
+        <div className="property-body">
+          <small>
+            {item.location ||
+              item.category ||
+              (item.kind === "design" ? "Construction design" : "Apartment")}
+          </small>
           <h3>{item.title}</h3>
           <p>
             {item.bhk ? item.bhk + " BHK · " : ""}
             {money(item.price_inr)}
           </p>
+          <ArrowUpRight
+            className="property-arrow"
+            size={20}
+            aria-hidden="true"
+          />
         </div>
       </a>
     </article>
@@ -139,7 +164,7 @@ export function FormAction({
   onDone?: () => void;
 }) {
   const [busy, setBusy] = useState(false),
-    [msg, setMsg] = useState("");
+    [feedback, setFeedback] = useState<{ message: string; error?: boolean }>();
   return (
     <form
       className="apx-form"
@@ -147,14 +172,14 @@ export function FormAction({
         e.preventDefault();
         const form = e.currentTarget;
         setBusy(true);
-        setMsg("");
+        setFeedback(undefined);
         try {
           await submit(Object.fromEntries(new FormData(form)));
           if (reset) form.reset();
-          setMsg("Saved.");
+          setFeedback({ message: "Saved." });
           onDone?.();
         } catch (e) {
-          setMsg((e as Error).message);
+          setFeedback({ message: (e as Error).message, error: true });
         } finally {
           setBusy(false);
         }
@@ -162,7 +187,14 @@ export function FormAction({
     >
       {children}
       <button disabled={busy}>{busy ? "Please wait…" : label}</button>
-      <span role="status">{msg}</span>
+      {feedback && (
+        <p
+          className={`form-feedback ${feedback.error ? "error" : "success"}`}
+          role={feedback.error ? "alert" : "status"}
+        >
+          {feedback.message}
+        </p>
+      )}
     </form>
   );
 }

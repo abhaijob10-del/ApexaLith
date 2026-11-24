@@ -1,4 +1,5 @@
 ﻿import React, { useState } from "react";
+import { ArrowLeft, ArrowUpRight, Check, Search } from "lucide-react";
 import { api } from "../services/api";
 import {
   Card,
@@ -16,13 +17,30 @@ import { LoginForm } from "../components/AuthModal";
 export function Browse({ kind }: { kind: string }) {
   const [filter, setFilter] = useState(""),
     [page, setPage] = useState(0);
+  const form = React.useRef<HTMLFormElement>(null);
+  const isFiltered = [...new URLSearchParams(filter).entries()].some(
+    ([key, value]) => Boolean(value) && !(key === "sort" && value === "newest"),
+  );
+  function clearFilters() {
+    form.current?.reset();
+    setFilter("");
+    setPage(0);
+  }
   const result = useData(
     "/listings?kind=" + kind + "&page=" + page + "&" + filter,
   );
   return (
     <section>
-      <h1>{kind === "design" ? "Construction designs" : "Apartments"}</h1>
+      <div className="page-heading">
+        <h1>{kind === "design" ? "Construction designs" : "Apartments"}</h1>
+        <p>
+          {kind === "design"
+            ? "Browse designs by name, location or category."
+            : "Find an apartment by location, budget or availability."}
+        </p>
+      </div>
       <form
+        ref={form}
         className="filters"
         onSubmit={(e) => {
           e.preventDefault();
@@ -58,17 +76,53 @@ export function Browse({ kind }: { kind: string }) {
             <option value="title">Name</option>
           </select>
         </label>
-        <button>Apply filters</button>
+        <button>
+          <Search size={17} aria-hidden="true" /> Apply filters
+        </button>
+        {isFiltered && (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={clearFilters}
+          >
+            Clear filters
+          </button>
+        )}
       </form>
       {!result.data ? (
         <Feedback error={result.error} />
       ) : (
         <>
           {!result.data.items.length && (
-            <p>
-              No matching {kind === "design" ? "designs" : "apartments"}.{" "}
-              <a href="/contact">Contact the studio</a>
-            </p>
+            <div className="empty-state">
+              <Search size={23} aria-hidden="true" />
+              <h2>
+                {isFiltered
+                  ? "No matching listings"
+                  : kind === "design"
+                    ? "No published designs yet"
+                    : "No published apartments yet"}
+              </h2>
+              <p>
+                {isFiltered
+                  ? "Try clearing your filters to broaden the search."
+                  : "Contact the studio for current opportunities."}
+              </p>
+              {isFiltered ? (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={clearFilters}
+                >
+                  Show all listings
+                </button>
+              ) : (
+                <a className="text-link" href="/contact">
+                  Contact the studio{" "}
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </a>
+              )}
+            </div>
           )}
           <div className="cards">
             {result.data.items.map((item: Listing) => (
@@ -86,7 +140,8 @@ export function RequestForm({ item, user }: { item?: Listing; user?: any }) {
     [done, setDone] = useState(false);
   if (done)
     return (
-      <p role="status">
+      <p className="form-feedback success" role="status">
+        <Check size={20} aria-hidden="true" />
         Your request has been received. The team will follow up using your
         contact details.
       </p>
@@ -165,16 +220,53 @@ export function Detail({
   preview?: boolean;
 }) {
   const [msg, setMsg] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string>();
+  const galleryImage = item.gallery.includes(selectedImage)
+    ? selectedImage
+    : item.gallery[0];
   return (
-    <section>
+    <section className="listing-detail">
+      {!preview && (
+        <a
+          className="back-link text-link"
+          href={item.kind === "apartment" ? "/apartments" : "/designs"}
+        >
+          <ArrowLeft size={16} aria-hidden="true" />{" "}
+          {item.kind === "apartment" ? "All apartments" : "All designs"}
+        </a>
+      )}
       <small>
         {item.kind === "apartment" ? "Apartment" : "Construction design"} ·{" "}
         {item.location || item.category}
       </small>
       <h1>{item.title}</h1>
-      {item.gallery[0] && (
+      {galleryImage && (
         <div className="cover">
-          <Photo id={item.gallery[0]} alt={item.title} large />
+          <Photo
+            id={galleryImage}
+            alt={
+              item.title +
+              (item.gallery.length > 1
+                ? " – photo " + (item.gallery.indexOf(galleryImage) + 1)
+                : "")
+            }
+            large
+          />
+        </div>
+      )}
+      {item.gallery.length > 1 && (
+        <div className="gallery-strip" role="group" aria-label="Listing photos">
+          {item.gallery.map((id, index) => (
+            <button
+              type="button"
+              key={id}
+              onClick={() => setSelectedImage(id)}
+              aria-label={`Show photo ${index + 1}`}
+              aria-pressed={id === galleryImage}
+            >
+              <Photo id={id} />
+            </button>
+          ))}
         </div>
       )}
       <div className="split">
@@ -205,13 +297,6 @@ export function Detail({
               <Photo id={item.floor_plan_id} alt="Floor plan" large />
             </>
           )}
-          {item.gallery.slice(1).map((id, i) => (
-            <Photo
-              key={id}
-              id={id}
-              alt={item.title + " gallery image " + (i + 2)}
-            />
-          ))}
           {!preview &&
             item.kind === "apartment" &&
             (user?.role === "customer" ? (
@@ -239,7 +324,7 @@ export function Detail({
           <p role="status">{msg}</p>
         </div>
         {!preview && (
-          <aside>
+          <aside className="enquiry-panel">
             <h2>Enquire</h2>
             <RequestForm item={item} user={user} />
           </aside>

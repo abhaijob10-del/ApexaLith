@@ -1,4 +1,12 @@
 ﻿import React, { Suspense, lazy, useEffect } from "react";
+import { useRef, useState } from "react";
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Menu,
+  X,
+} from "lucide-react";
 import { Account, Browse, ListingPage, RequestForm } from "./catalog/Public";
 import { Card, Feedback, Photo, useData } from "./catalog/shared";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -11,6 +19,60 @@ const links = [
   ["/about", "About"],
   ["/contact", "Contact"],
 ];
+function Navigation({ signedIn }: { signedIn: boolean }) {
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  return (
+    <header
+      className="site-header"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          setOpen(false);
+          trigger.current?.focus();
+        }
+      }}
+    >
+      <a className="brand" href="/" aria-label="ApexaLith home">
+        ApexaLith<span aria-hidden="true">.</span>
+      </a>
+      <button
+        ref={trigger}
+        type="button"
+        className="menu-toggle"
+        aria-expanded={open}
+        aria-controls="primary-nav"
+        onClick={() => setOpen(!open)}
+      >
+        {open ? (
+          <X size={18} aria-hidden="true" />
+        ) : (
+          <Menu size={18} aria-hidden="true" />
+        )}{" "}
+        Menu
+      </button>
+      <nav id="primary-nav" data-open={open} aria-label="Main navigation">
+        {links.map(([url, title]) => (
+          <a
+            key={url}
+            href={url}
+            aria-current={path === url ? "page" : undefined}
+          >
+            {title}
+          </a>
+        ))}
+        <a
+          className="account-link"
+          href="/account"
+          aria-current={path === "/account" ? "page" : undefined}
+        >
+          {signedIn ? "My account" : "Sign in"}{" "}
+          <ArrowUpRight size={15} aria-hidden="true" />
+        </a>
+      </nav>
+    </header>
+  );
+}
+
 function Home({ settings }: { settings: any }) {
   const featured = useData("/listings?featured=true");
   return (
@@ -20,7 +82,7 @@ function Home({ settings }: { settings: any }) {
       )}
       <section className="landing">
         <div className="landing-copy">
-          <small>Bengaluru, India</small>
+          <small className="eyebrow">Bengaluru, India</small>
           <h1>Architecture &amp; construction</h1>
           <p>
             {settings.hero?.value ||
@@ -28,9 +90,11 @@ function Home({ settings }: { settings: any }) {
           </p>
           <div className="actions">
             <a className="cta" href="/apartments">
-              Explore apartments
+              Explore apartments <ArrowUpRight size={19} aria-hidden="true" />
             </a>
-            <a href="/designs">View designs ↗</a>
+            <a className="text-link" href="/designs">
+              View designs <ArrowRight size={17} aria-hidden="true" />
+            </a>
           </div>
         </div>
         <div className="hero-photo">
@@ -51,8 +115,11 @@ function Home({ settings }: { settings: any }) {
           )}
         </div>
       </section>
-      <section>
-        <h2>Featured properties &amp; designs</h2>
+      <section className="collection" aria-labelledby="collection-heading">
+        <div className="section-heading">
+          <h2 id="collection-heading">Properties &amp; designs</h2>
+          <ArrowDownRight aria-hidden="true" className="section-arrow" />
+        </div>
         {featured.data ? (
           <>
             {featured.data.items.length ? (
@@ -61,15 +128,27 @@ function Home({ settings }: { settings: any }) {
                   <Card key={i.id} item={i} />
                 ))}
               </div>
-            ) : (
-              <p>
-                Featured listings will appear here as the studio publishes them.
-              </p>
-            )}
+            ) : null}
           </>
         ) : (
           <Feedback error={featured.error} />
         )}
+        <div className="collection-links">
+          <a href="/apartments">
+            <span>
+              <strong>Apartments</strong>
+              <small>Search by location, size and availability</small>
+            </span>
+            <ArrowUpRight aria-hidden="true" />
+          </a>
+          <a href="/designs">
+            <span>
+              <strong>Construction designs</strong>
+              <small>Explore the design catalogue</small>
+            </span>
+            <ArrowUpRight aria-hidden="true" />
+          </a>
+        </div>
       </section>
       {settings.testimonial?.value && (
         <blockquote>{settings.testimonial.value}</blockquote>
@@ -166,24 +245,12 @@ export default function App() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <header>
-        <a className="brand" href="/">
-          ApexaLith
-        </a>
-        <nav aria-label="Main navigation">
-          {links.map(([url, title]) => (
-            <a
-              key={url}
-              href={url}
-              aria-current={path === url ? "page" : undefined}
-            >
-              {title}
-            </a>
-          ))}
-          <a href="/account">{user ? "My account" : "Sign in"}</a>
-        </nav>
-      </header>
-      <main id="main">
+      <Navigation signedIn={Boolean(user)} />
+      <main
+        id="main"
+        className={section === "admin" ? "admin-main" : undefined}
+        tabIndex={-1}
+      >
         <ErrorBoundary fallbackTitle="ApexaLith">{body}</ErrorBoundary>
       </main>
       <footer>
