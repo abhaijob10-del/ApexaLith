@@ -1,0 +1,6 @@
+{
+  "name": "ApexaLith",
+  "description": "Luxury Construction, Architecture & Interior Excellence platform featuring VIP Client Vault, 3D Architectural Walkthroughs, Smart Estimator & Integrated ConTech CRM.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
