@@ -1,3 +1,4 @@
+import {publicDocument,seoRoutes} from './backend/seo.mjs';
 import {installPlatform, apiErrors} from './backend/platform.mjs';
 import express from 'express';
 import path from 'path';
@@ -21,7 +22,9 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
+if(process.argv.includes('--serve-built')) process.env.NODE_ENV='production';
 installPlatform(app);
+seoRoutes(app);
 app.use(express.json());
 
 // Initialize Gemini API if key is available
@@ -1263,10 +1266,9 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist', 'public');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    app.use('/assets',express.static(path.join(distPath,'assets'),{immutable:true,maxAge:'1y'}));
+    app.get('*',publicDocument(distPath));
+    app.use(apiErrors);
   }
 
   app.listen(PORT, process.env.HOST || '127.0.0.1', () => {

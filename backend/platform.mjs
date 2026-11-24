@@ -1,33 +1,98 @@
-import {catalogRoutes} from './catalog.mjs';
-import {mediaRoutes} from './media.mjs';
-import express from 'express';
-import {authRoutes} from './auth.mjs';
-import {requireRole} from './security.mjs';
+import { catalogRoutes } from "./catalog.mjs";
+import { mediaRoutes } from "./media.mjs";
+import express from "express";
+import { authRoutes } from "./auth.mjs";
+import { query, requireRole } from "./security.mjs";
 export function installPlatform(app) {
-  app.disable('x-powered-by');
-  app.use((req,res,next)=>{
-    res.set({'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','X-Frame-Options':'DENY'});
-    if(/^\/(api|account|admin)(\/|$)/.test(req.path)) res.set({'Cache-Control':'no-store','X-Robots-Tag':'noindex'});
-    if(req.path.startsWith('/api/') && !['GET','HEAD','OPTIONS'].includes(req.method)) {
-      const origin=req.get('origin');
-      if(req.get('sec-fetch-site')==='cross-site' || (origin && origin!==(process.env.APP_ORIGIN||'http://'+req.get('host')))) return res.status(403).json({error:'Request origin rejected.'});
-      if(!req.is('application/json') && !req.is('multipart/form-data')) return res.status(415).json({error:'Unsupported request format.'});
+  app.disable("x-powered-by");
+  if (process.env.TRUSTED_PROXY)
+    app.set("trust proxy", process.env.TRUSTED_PROXY);
+  app.get("/readyz", runReady);
+
+  app.use((req, res, next) => {
+    res.set({
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "X-Frame-Options": "DENY",
+    });
+    if (process.env.NODE_ENV === "production")
+      res.set(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://images.unsplash.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+      );
+    if (/^\/(api|account|admin)(\/|$)/.test(req.path))
+      res.set({ "Cache-Control": "no-store", "X-Robots-Tag": "noindex" });
+    if (
+      req.path.startsWith("/api/") &&
+      !["GET", "HEAD", "OPTIONS"].includes(req.method)
+    ) {
+      const origin = req.get("origin");
+      if (
+        req.get("sec-fetch-site") === "cross-site" ||
+        (origin &&
+          origin !== (process.env.APP_ORIGIN || "http://" + req.get("host")))
+      )
+        return res.status(403).json({ error: "Request origin rejected." });
+      if (!req.is("application/json") && !req.is("multipart/form-data"))
+        return res.status(415).json({ error: "Unsupported request format." });
     }
     next();
   });
-  const api=express.Router();
-  api.use(express.json({limit:'64kb'}));
+  const api = express.Router();
+  api.use(express.json({ limit: "64kb" }));
   authRoutes(api);
   catalogRoutes(api);
   mediaRoutes(api);
-  app.use('/api/v1',api);
-  app.use('/api/v1',(req,res)=>res.status(404).json({error:'Unknown endpoint.'}));
-  app.use('/api',(req,res,next)=>req.path==='/health' && req.method==='GET'?next():requireRole('admin')(req,res,next));
+  app.use("/api/v1", api);
+  app.use("/api/v1", (req, res) =>
+    res.status(404).json({ error: "Unknown endpoint." }),
+  );
+  app.use("/api", (req, res, next) =>
+    req.path === "/health" && req.method === "GET"
+      ? next()
+      : process.env.NODE_ENV === "production"
+        ? res.status(404).json({ error: "Unknown endpoint." })
+        : requireRole("admin")(req, res, next),
+  );
 }
-export function apiErrors(err,req,res,next) {
-  if(err.code==='23503' || err.code==='23505') return res.status(409).json({error:'This item is referenced or its unique value is already used.'});
-  if(['22008','22007','23514','22P02'].includes(err.code)) return res.status(400).json({error:'Check the supplied values.'});
-  const status=Number(err.status)||500;
-  console.error(JSON.stringify({event:status===401?'authentication_denied':status>=500?'application_error':'request_denied',status}));
-  res.status(status).json({error:status>=500?'Service temporarily unavailable.':err.type==='entity.parse.failed'?'Invalid JSON.':err.message});
+async function runReady(req, res) {
+  try {
+    await query("SELECT mfa_ciphertext FROM users LIMIT 0");
+    res.json({ ready: true });
+  } catch {
+    console.error(JSON.stringify({ event: "database_unavailable" }));
+    res.status(503).json({ ready: false });
+  }
+}
+export function apiErrors(err, req, res, next) {
+  if (err.code === "23503" || err.code === "23505")
+    return res
+      .status(409)
+      .json({
+        error: "This item is referenced or its unique value is already used.",
+      });
+  if (["22008", "22007", "23514", "22P02"].includes(err.code))
+    return res.status(400).json({ error: "Check the supplied values." });
+  const status = Number(err.status) || 500;
+  console.error(
+    JSON.stringify({
+      event:
+        status === 401
+          ? "authentication_denied"
+          : status >= 500
+            ? "application_error"
+            : "request_denied",
+      status,
+    }),
+  );
+  res
+    .status(status)
+    .json({
+      error:
+        status >= 500
+          ? "Service temporarily unavailable."
+          : err.type === "entity.parse.failed"
+            ? "Invalid JSON."
+            : err.message,
+    });
 }
