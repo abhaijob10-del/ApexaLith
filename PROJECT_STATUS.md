@@ -1,5 +1,9 @@
 # ApexaLith production upgrade
 
+## Current handoff
+
+The implementation and release tests through 4ca1d47 are verified locally. The next phase is owner-configured staging acceptance. Start with SETUP_GUIDE.md to connect a persistent development database, then ADMIN_GUIDE.md to create the real administrator. DEPLOYMENT_GUIDE.md covers external SMS, storage, backups and launch approval. No public rollout has been performed.
+
 ## Verified baseline
 
 On 24 November 2026 the clean production checkout and both live GitHub branches pointed to f3592dc. No previous implementation checkpoint, stash, second worktree or status document was available. The adjacent source archive also lacked a status document.
