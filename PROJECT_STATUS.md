@@ -18,3 +18,7 @@ The production bundle now builds as ESM, serves only dist/public and defaults to
 4. Verify security, responsive layouts, database persistence, production configuration and provider delivery. Finish operator guides.
 
 Production deployment is blocked. The database, auth, CMS, media and customer workflows have not passed production acceptance. No SMS sent or production records changed.
+
+## PostgreSQL checkpoint
+
+Build repair committed as 2f890d3. Added pooled node-postgres connections, an isolated apexalith schema, additive transactions and checksum-verified migrations. The schema covers customers, administrators, sessions, OTP challenges, throttling, apartments/designs, ordered media references, saved properties, enquiries, content settings and audit history. In a separate disposable PostgreSQL 18 instance the initial migration, replay and ledger check passed. Existing databases were untouched. Application route integration follows.
